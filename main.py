@@ -3,6 +3,8 @@ import os
 import numpy as np
 import math
 
+# Umut Baybece 2743656
+
 # I am extracting largest connected component because it is the breast region, 
 # and I tried to remove white square labels in some images
 def largest_connected_component(binary):
