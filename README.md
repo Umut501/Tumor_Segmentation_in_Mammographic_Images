@@ -1,36 +1,9 @@
-# Mammogram Tumor Segmentation
-
-This repository contains a Python implementation of a tumor segmentation algorithm. The script processes images in `dataset/` and writes outputs to `results/`.
-
-Quick start
-
-1. Create a virtual environment and activate it (zsh):
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-2. Install requirements:
-
-```bash
-pip install -r requirements.txt
-```
-
-3. Run the script:
-
-```bash
-python main.py
-```
-
-Outputs
-
-- `results/<image>_seg.png` : binary segmentation mask (white = tumor)
-- `results/<image>_breast.png` : breast image after background removal and pectoral removal
-- `results/<image>_overlay.png` : original image overlayed with segmentation (red) and ground truth circle (green)
-
-Notes
-
-- The code reads `dataset/Info.txt` and uses the (x,y,r) entries to build a circular ground-truth. The y-coordinate in the file is inverted as the assignment specified (subtract from 1024) when image height >= 1024.
-- The algorithm follows the steps you described: thresholding for breast, mask multiply, threshold & remove pectoral muscle, erosion to remove vessels, then region growing seeded from remaining pixels.
-- Tuning: disk radius for erosion (`disk(12)`) and region growing tolerance (`tol=12`) may need tuning per-image for best performance.
+I present a method and algorithm for automatically detecting tumors in a
+set of images from the MIAS (Mini Mammography Database). The report provides a step
+by step explanation of the algorithm used and the reasons for my method choices for each
+algorithm step. The algorithm first performs various preprocessing and masking operations
+to remove unnecessary parts from the images. After removing the irrelevant parts, the next
+step leaves only the breast region in the images. In the third step, the algorithm uses erosion and minimum filters to erode and remove vessels outside the tumor and irrelevant parts. In the next step, I select the brightest point in the processed images. This selected pixel is
+assigned as the starting point for the region growing algorithm. Therefore, in the next step,
+I use this starting point for region growing and apply morphological closing to fill in small
+gaps within the segmented tumor area. Finally, I display the tumor region in the original image and plot the ground truth circle on the images for comparison.
