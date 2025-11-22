@@ -47,11 +47,12 @@ def remove_muscle(img, angle_deg=26):
 
 # finding the seed algorithm
 def find_seed(img, params):
-    # all preprocessing is done in main loop before calling this function 
+    # all pre-processing is done in main loop before calling this function 
     # Gaussian blur, contrast stretching, muscle removal with triangle mask
 
-    # In the first step I used otsu thresholding to get largest white region since it is the breast area
+    # In the first step I used otsu thresholding to separate breast region from background
     _, m = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    # and I extracted largest connected component which is the breast region
     m = largest_connected_component(m > 0).astype(np.uint8) * 255 
     # breast mask
     breast_mask_u8 = m.astype(np.uint8)
@@ -198,7 +199,7 @@ for i in range(len(imgList)):
     # secondly I used contrast stretching to enhance the intensity differences
     contrast_stretching = cv2.normalize(blurred, None, 0, 255, cv2.NORM_MINMAX)
 
-    # thirdly I removed the muscle part with triangle mask
+    # thirdly I removed the muscle part and white label apperaing in the some images with triangle mask
     muscle_removed, angle_mask = remove_muscle(contrast_stretching)
 
     # I use this preprocessed image for the finding_seed
@@ -206,7 +207,9 @@ for i in range(len(imgList)):
 
     # I set the parameters for the finding_seed here
     parameters_for_finding_seed = {'inner_thresh_offset': 20, 'erosion_radius': 12, 'min_filter_radius': 21}
-    x_auto, y_auto, breast_mask_u8, breast_only, breast_without_muscle, no_muscle_binary_img, eroded, mean_filtered, min_filtered = find_seed(img_for_finding_seed, parameters_for_finding_seed)
+
+    # x_coordinate_of_seed and y_coordinate_of_seed are the coordinates of the seed point returned by the find_seed function
+    x_coordinate_of_seed, y_coordinate_of_seed, breast_mask_u8, breast_only, breast_without_muscle, no_muscle_binary_img, eroded, mean_filtered, min_filtered = find_seed(img_for_finding_seed, parameters_for_finding_seed)
 
     # region growing part 
 
@@ -217,7 +220,7 @@ for i in range(len(imgList)):
     # applying mask to contrast stretched image for region growing 
     contrast_masked = cv2.bitwise_and(contrast_stretching, contrast_stretching, mask=mask_for_rg)
     # calling region growing function
-    segmented_img = region_growing_4_connectivity(contrast_masked, x_auto, y_auto, thresh, img.shape[0] * img.shape[1])
+    segmented_img = region_growing_4_connectivity(contrast_masked, x_coordinate_of_seed, y_coordinate_of_seed, thresh, img.shape[0] * img.shape[1])
 
     # after region growing I applied morphological closing to fill small holes in the segmented region
     closing_disk = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (12, 12))
@@ -226,9 +229,9 @@ for i in range(len(imgList)):
     # so I extracted the tumor region from the original image for visualization
     tumor_region = cv2.bitwise_and(img, img, mask=segmented_img_closed)
 
-    # drawing ground truth rectangle on original image
+    # drawing ground truth circle on original image
     img_color = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-    cv2.rectangle(img_color, (x - radius, y - radius), (x + radius, y + radius), (0, 0, 255), 4)
+    cv2.circle(img_color, (x, y), radius, (0, 0, 255), 4)
 
     # Saving all steps in one image for finding seed
     # I created a grid to show all steps
@@ -272,7 +275,7 @@ for i in range(len(imgList)):
 
     # 9. Finding Seed (the brightest point in image)
     step9 = cv2.cvtColor(min_filtered, cv2.COLOR_GRAY2BGR)
-    cv2.circle(step9, (x_auto, y_auto), 5, (0, 255, 0), -1)
+    cv2.circle(step9, (x_coordinate_of_seed, y_coordinate_of_seed), 5, (0, 255, 0), -1)
     cv2.putText(step9, "9. Finding Seed", (10, 40), font, 1.2, (255, 255, 255), 2)
     cv2.putText(step9, "(brightest point)", (10, 80), font, 0.8, (255, 255, 255), 2)
 
@@ -293,7 +296,7 @@ for i in range(len(imgList)):
 
     # 13. Ground Truth
     step13 = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-    cv2.rectangle(step13, (x - radius, y - radius), (x + radius, y + radius), (0, 0, 255), 4)
+    cv2.circle(step13, (x, y), radius, (0, 0, 255), 4)
     cv2.putText(step13, "13. Ground Truth", (10, 40), font, 1.2, (255, 255, 255), 2)
 
     # 14. Overlay (Ground truth + Segmentation)
@@ -301,7 +304,7 @@ for i in range(len(imgList)):
     # Segmented region in green
     step14[segmented_img_closed > 0] = [0, 255, 0]
     # Ground truth box in red
-    cv2.rectangle(step14, (x - radius, y - radius), (x + radius, y + radius), (0, 0, 255), 4)
+    cv2.circle(step14, (x, y), radius, (0, 0, 255), 4)
     cv2.putText(step14, "14. Overlay", (10, 40), font, 1.2, (255, 255, 255), 2)
 
     # combining all steps into one image
