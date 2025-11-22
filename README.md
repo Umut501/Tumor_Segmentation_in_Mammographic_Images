@@ -1,6 +1,6 @@
-# Mammogram Tumor Segmentation (Assignment 1)
+# Mammogram Tumor Segmentation
 
-This repository contains a Python implementation of the 4-step tumor segmentation algorithm described in the assignment. The script processes images in `dataset/` and writes outputs to `results/`.
+This repository contains a Python implementation of a tumor segmentation algorithm. The script processes images in `dataset/` and writes outputs to `results/`.
 
 Quick start
 
